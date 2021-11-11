@@ -8,7 +8,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from torch.autograd import Variable
-from torch_model import Model
+from torch_model import Model,evaluate
 
 batch_size = 64
 MNIST_path = './'
@@ -74,7 +74,7 @@ for epoch in range(n_epochs):
 
             torch.cuda.empty_cache()
 
-    print(torchmodel.evaluate(torchmodel, test_loader, gpu_config=True, test_loss=None))
+    print(evaluate(torchmodel, test_loader, gpu_config=True, test_loss=None))
 
-torch.save(torchmodel, './models/mnist_Linear_model.pkl')
+torch.save(torchmodel.state_dict(), './models/mnist_Linear_model.pkl')
 
