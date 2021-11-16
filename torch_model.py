@@ -1,5 +1,6 @@
 import torch
 from torch.autograd import Variable
+from tqdm import tqdm
 
 
 def evaluate(test_model, test_data_loader, gpu_config=False, test_loss=None):
@@ -9,6 +10,8 @@ def evaluate(test_model, test_data_loader, gpu_config=False, test_loss=None):
     sum_exampls = 0
     for i, data in enumerate(test_data_loader):
         test_data, test_label = data
+        # test_data += torch.randn(size=test_data.size())*0.1
+        # test_data = torch.clamp(test_data,0,1)
         if gpu_config:
             test_data, test_label = Variable(test_data.cuda()), Variable(test_label.cuda())
         else:
@@ -56,3 +59,39 @@ class Model(torch.nn.Module):
         confidence, label = torch.max(outputs, 1)
         return int(label.data.numpy()), float(confidence.data.numpy())
 
+def train(model_dict, dataloader, loss, gpu_flag=False):
+    model = Model(in_channels=784, out_channels=10)
+    model.load_state_dict(model_dict)
+    running_loss = 0.0
+    running_correct = 0
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=1e-5, betas=(0.9, 0.999), eps=1e-8,
+                                 weight_decay=0, amsgrad=False)
+    if gpu_flag:
+        model.cuda()
+    model.train()
+    for i, data in enumerate(tqdm(dataloader)):
+        X_train, y_train = data
+        if gpu_flag:
+            X_train, y_train = Variable(X_train.cuda()), Variable(y_train.cuda())
+        else:
+            X_train, y_train = Variable(X_train), Variable(y_train)
+        outputs = model(X_train)
+        _, pred = torch.max(outputs.data, 1)
+        optimizer.zero_grad()
+        losses = loss(outputs, y_train)
+        losses.backward()
+        optimizer.step()
+
+        running_loss += losses.data.item()
+
+        if gpu_flag:
+            running_correct += torch.sum(pred == y_train.data).cpu().numpy()
+        else:
+            running_correct += torch.sum(pred == y_train.data).numpy()
+
+        if i % 50 == 1:
+            print("Loss is:{:.4f}, Train Accuracy is:{:.4f}%, ".format(running_loss /( (i+1)* dataloader.batch_size),
+                                                                100 * running_correct /( (i+1)* dataloader.batch_size)))
+
+            torch.cuda.empty_cache()
+    return model.state_dict()
