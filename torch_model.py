@@ -53,7 +53,6 @@ class Model(torch.nn.Module):
         x = self.dense(x)
         return x
 
-
     def classify(self,x):
         outputs = self.forward(x)
         confidence, label = torch.max(outputs, 1)

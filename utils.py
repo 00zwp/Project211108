@@ -75,7 +75,6 @@ def adv_train_examples():
     np.save("./Adversarial/label.npy", label)
 
 def mnist_noniid(dataset, target, Transform):
-
     imgs = dataset.data
     labels = dataset.targets
     index = np.where(labels!=5)
